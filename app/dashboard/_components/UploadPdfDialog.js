@@ -12,20 +12,23 @@ import {
   } from "@/components/ui/dialog"
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { useMutation } from 'convex/react'
+import { useAction, useMutation } from 'convex/react'
 import { Loader2Icon } from 'lucide-react'
 import { api } from '@/convex/_generated/api'
 import uuid4 from 'uuid4'
 import { useUser } from '@clerk/nextjs'
+import axios from 'axios'
   
 
 function UploadPdfDialog({children}) {
   const generateUploadUrl=useMutation(api.fileStorage.generateUploadUrl);
   const addFileEntry=useMutation(api.fileStorage.AddFileEntryToDb);
   const getFileUrl=useMutation(api.fileStorage.getFileUrl);
+  const embeddDocument=useAction(api.myAction.ingest);
   const {user}=useUser()
   const [file,setFile]=useState();
   const [fileName,setFileName]=useState();
+  const [open,setOpen]=useState(false);
   const [load,setLoading]=useState(false);
   const OnFileSelect = (event)=>{
     setFile(event.target.files[0]);
@@ -54,13 +57,25 @@ function UploadPdfDialog({children}) {
       createdBy:user?.primaryEmailAddress?.emailAddress
     })
     console.log('Response',resp);
+
+    //api call to fetch pdf process data
+    const ApiResp=await axios.get('/api/pdf-loader?pdfUrl='+fileUrl);
+    console.log(ApiResp.data.result);
+    const embedResult=await embeddDocument({
+      splitText:ApiResp.data.result,
+      fileId:fileId
+    });
+    console.log(embedResult);
+    setOpen(false);
     setLoading(false);
   }
 
   return (
-    <Dialog>
+    <Dialog open={open}>
     <DialogTrigger asChild>
-        {children}
+        <Button onClick={()=>setOpen(true)} className="w-full">
+          + Upload PDF File
+        </Button>
     </DialogTrigger>
     <DialogContent>
         <DialogHeader>
@@ -84,7 +99,7 @@ function UploadPdfDialog({children}) {
               Close
             </Button>
           </DialogClose>
-          <Button onClick={OnUpload}>
+          <Button onClick={OnUpload} disabled={load}>
             {load?
             <Loader2Icon className='animate-spin'/>:'Upload'}
             </Button>

@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
-const pdfUrl="https://fastidious-swan-6.convex.cloud/api/storage/1785ea96-fc4d-4b34-ad63-5e1941d8b0bc";
+// const pdfUrl="https://fastidious-swan-6.convex.cloud/api/storage/1785ea96-fc4d-4b34-ad63-5e1941d8b0bc";
 export async function GET(req){
 
+    const reqUrl=req.url;
+    const {searchParams}=new URL(reqUrl);
+    const pdfUrl=searchParams.get('pdfUrl');
+    console.log(pdfUrl);
     const response=await fetch(pdfUrl);
     const data=await response.blob();
     const loader=new WebPDFLoader(data);
